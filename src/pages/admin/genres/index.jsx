@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { getGenres } from "../../../_services/genres";
+import { getGenres, deleteGenre } from "../../../_services/genres";
 import { Link } from "react-router-dom";
+
 
 export default function AdminGenres() {
   const [genres, setGenres] = useState([]);
@@ -17,6 +18,21 @@ export default function AdminGenres() {
 
     fetchGenres();
   }, []);
+
+  const handleDelete = async (id) => {
+    if (confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+      try {
+        await deleteGenre(id);
+        setGenres(genres.filter((genre) => genre.id !== id));
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  };
+
+  const toggleDropdown = (id) => {
+    setOpenDropdownID(openDropdownID === id ? null : id);
+  };
 
   return (
     <section className="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5">
@@ -40,6 +56,7 @@ export default function AdminGenres() {
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Description</th>
+                <th className="px-4 py-3">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -50,11 +67,27 @@ export default function AdminGenres() {
                       {genre.name}
                     </th>
                     <td className="px-4 py-3">{genre.description || "-"}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex space-x-2">
+                        <Link
+                          to={`/admin/genres/edit/${genre.id}`}
+                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(genre.id)}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="2" className="text-center py-4 text-gray-500 dark:text-gray-400">
+                  <td colSpan="3" className="text-center py-4 text-gray-500 dark:text-gray-400">
                     Data tidak ditemukan
                   </td>
                 </tr>

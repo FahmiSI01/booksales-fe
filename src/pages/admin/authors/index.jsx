@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { getAuthors } from "../../../_services/authors";
 import { Link } from "react-router-dom";
+import { deleteAuthor } from "../../../_services/authors";
 
 export default function AdminAuthors() {
   const [authors, setAuthors] = useState([]);
+  const [openDropdownID, setOpenDropdownID] = useState(null);
 
   useEffect(() => {
     const fetchAuthors = async () => {
@@ -17,6 +19,18 @@ export default function AdminAuthors() {
 
     fetchAuthors();
   }, []);
+
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this author?");
+    if (confirmDelete) {
+      await deleteAuthor(id);
+      setAuthors(authors.filter((author) => author.id !== id));
+    }
+  };
+
+   const toggleDropdown = (id) => {
+    setOpenDropdownID(openDropdownID === id ? null : id);
+  };
 
   return (
     <section className="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5">
@@ -41,6 +55,7 @@ export default function AdminAuthors() {
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Photo</th>
                 <th className="px-4 py-3">Bio</th>
+                <th className="px-4 py-3">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -52,11 +67,25 @@ export default function AdminAuthors() {
                     </th>
                     <td className="px-4 py-3">{author.photo}</td>
                     <td className="px-4 py-3">{author.bio || "-"}</td>
+                    <td className="px-4 py-3 flex items-center space-x-2">
+                      <Link
+                        to={`/admin/authors/edit/${author.id}`}
+                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(author.id)}
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" className="text-center py-4 text-gray-500 dark:text-gray-400">
+                  <td colSpan="4" className="text-center py-4 text-gray-500 dark:text-gray-400">
                     Data tidak ditemukan
                   </td>
                 </tr>
