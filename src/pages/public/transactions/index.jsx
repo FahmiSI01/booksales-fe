@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
+import { getTransactions } from "../../../_services/transactions";
 
 export default function UserTransactions() {
   const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("userInfo") || "{}");
-    if (!user.id) return;
+    const fetchTransactions = async () => {
+      try {
+        const data = await getTransactions();
+        setTransactions(data || []);
+      } catch (error) {
+        console.error("Gagal mengambil riwayat transaksi:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const allTransactions = JSON.parse(
-      localStorage.getItem("transactions") || "[]"
-    );
-
-    const userTransactions = allTransactions.filter(
-      (item) => item.userId === user.id
-    );
-
-    setTransactions(userTransactions);
+    fetchTransactions();
   }, []);
 
   const formatRupiah = (number) => {
@@ -31,7 +33,9 @@ export default function UserTransactions() {
         Riwayat Transaksi
       </h1>
 
-      {transactions.length === 0 ? (
+      {loading ? (
+        <div className="text-center text-gray-500 mt-10">Memuat riwayat transaksi...</div>
+      ) : transactions.length === 0 ? (
         <div className="text-center text-gray-500 mt-10">
           Belum ada transaksi
         </div>
@@ -52,27 +56,31 @@ export default function UserTransactions() {
             <tbody className="bg-white divide-y divide-gray-100">
               {transactions.map((t, i) => (
                 <tr key={i} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 font-medium">{t.bookTitle}</td>
+                  <td className="px-4 py-3 font-medium">
+                    {t.book ? t.book.title : t.bookTitle || `Buku ID: ${t.book_id}`}
+                  </td>
 
                   <td className="px-4 py-3">
                     <span className="px-2 py-1 bg-gray-100 rounded-full">
-                      {t.quantity} pcs
+                      {t.quantity || 1} pcs
                     </span>
                   </td>
 
                   <td className="px-4 py-3 text-gray-700">
-                    {formatRupiah(t.price)}
+                    {t.book ? formatRupiah(t.book.price) : "-"}
                   </td>
 
                   <td className="px-4 py-3 font-semibold text-indigo-600">
-                    {formatRupiah(t.total)}
+                    {formatRupiah(t.total_amount || t.total)}
                   </td>
 
-                  <td className="px-4 py-3 text-gray-500">{t.date}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {t.created_at ? new Date(t.created_at).toLocaleDateString('id-ID') : t.date}
+                  </td>
 
                   <td className="px-4 py-3">
-                    <span className="px-3 py-1 text-xs rounded-full bg-green-100 text-green-700 font-semibold">
-                      {t.status}
+                    <span className={`px-3 py-1 text-xs rounded-full font-semibold ${t.status === 'success' || t.status === 'completed' || t.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {t.status === 'success' || t.status === 'completed' ? 'Berhasil' : t.status || 'Pending'}
                     </span>
                   </td>
                 </tr>

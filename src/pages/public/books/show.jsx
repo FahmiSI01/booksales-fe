@@ -3,6 +3,8 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { showBook } from "../../../_services/books";
 import { bookImageStorage } from "../../../_api";
 import { createTransactions } from "../../../_services/transactions";
+import { getCart, addCartItem } from "../../../_services/carts";
+import Swal from "sweetalert2";
 
 export default function ShowBook() {
   const { id } = useParams();
@@ -24,7 +26,7 @@ export default function ShowBook() {
 
   const user = JSON.parse(localStorage.getItem("userInfo") || "{}");
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
   e.preventDefault();
 
   if (!accessToken) {
@@ -32,33 +34,17 @@ export default function ShowBook() {
     return;
   }
 
-  try {
-    const payload = {
-      book_id: Number(id),
-      quantity: Number(quantity),
-    };
+  const item = {
+    bookId: Number(id),
+    title: book.title,
+    price: book.price,
+    quantity: Number(quantity),
+    image: book.cover_photo && book.cover_photo.startsWith("http")
+      ? book.cover_photo
+      : `${bookImageStorage}/${book.cover_photo}`
+  };
 
-    const response = await createTransactions(payload);
-
-    // 🔥 SIMPAN KE LOCALSTORAGE UNTUK USER PAGE
-    const existing = JSON.parse(localStorage.getItem("transactions") || "[]");
-
-    existing.push({
-      userId: user.id,
-      bookTitle: book.title,
-      quantity: quantity,
-      price: book.price, // 🔥 TAMBAH INI
-      total: book.price * quantity, // 🔥 TAMBAH INI
-      date: new Date().toISOString().split("T")[0],
-      status: "success",
-    });
-
-    localStorage.setItem("transactions", JSON.stringify(existing));
-
-    alert("Pembelian Berhasil");
-  } catch (error) {
-    console.log(error);
-  }
+  navigate("/payment", { state: { items: [item], source: "direct" } });
 };
 
   return (
@@ -164,7 +150,7 @@ export default function ShowBook() {
               <div className="mt-6 sm:gap-4 sm:items-center sm:flex sm:mt-8">
                 <form
                   onSubmit={handleSubmit}
-                  className="mt-6 sm:mt-8 space-y-4"
+                  className="mt-6 sm:mt-8 space-y-4 w-full"
                 >
                   <div>
                     <label
@@ -184,12 +170,72 @@ export default function ShowBook() {
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    className="text-white mt-4 sm:mt-0 bg-indigo-700 hover:bg-indigo-800 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-indigo-600 dark:hover:bg-indigo-700 focus:outline-none dark:focus:ring-indigo-800 flex items-center justify-center"
-                  >
-                    Beli
-                  </button>
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!accessToken) {
+                          Swal.fire({
+                            title: 'Belum Login',
+                            text: 'Silakan login terlebih dahulu untuk memasukkan ke keranjang.',
+                            icon: 'info',
+                            confirmButtonColor: '#4f46e5'
+                          }).then(() => navigate("/login"));
+                          return;
+                        }
+                        
+                        try {
+                          const cart = await getCart();
+                          
+                          // Check if it already exists
+                          const existingItem = cart.items ? cart.items.find(i => Number(i.book_id) === Number(id)) : null;
+                          
+                          if (existingItem) {
+                            Swal.fire({
+                              title: 'Oops!',
+                              text: 'Buku ini sudah ada di keranjang Anda.',
+                              icon: 'warning',
+                              confirmButtonColor: '#4f46e5'
+                            });
+                            return;
+                          }
+                          
+                          await addCartItem({
+                            cart_id: cart.id,
+                            book_id: Number(id),
+                            quantity: Number(quantity)
+                          });
+                          
+                          Swal.fire({
+                            title: 'Berhasil!',
+                            text: 'Buku berhasil dimasukkan ke keranjang.',
+                            icon: 'success',
+                            confirmButtonColor: '#4f46e5',
+                            timer: 2000,
+                            showConfirmButton: false
+                          });
+                        } catch (error) {
+                          console.error(error);
+                          Swal.fire({
+                            title: 'Gagal!',
+                            text: 'Gagal memasukkan buku ke keranjang.',
+                            icon: 'error',
+                            confirmButtonColor: '#4f46e5'
+                          });
+                        }
+                      }}
+                      className="text-indigo-700 mt-4 sm:mt-0 bg-white border border-indigo-700 hover:bg-indigo-50 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-transparent dark:text-indigo-400 dark:border-indigo-500 dark:hover:bg-gray-800 focus:outline-none dark:focus:ring-indigo-800 flex items-center justify-center flex-1 sm:flex-none"
+                    >
+                      Masukkan Keranjang
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="text-white mt-4 sm:mt-0 bg-indigo-700 hover:bg-indigo-800 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-indigo-600 dark:hover:bg-indigo-700 focus:outline-none dark:focus:ring-indigo-800 flex items-center justify-center flex-1 sm:flex-none"
+                    >
+                      Beli Langsung
+                    </button>
+                  </div>
                 </form>
               </div>
 

@@ -49,15 +49,12 @@ export const useDecodeToken = (token) => {
 
 export const logout = async ({ token }) => {
   try {
-    const { data } = await API.post('/logout', { token }, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`
-      }
-    })
-    localStorage.removeItem('accessToken')
+    const { data } = await API.post('/logout', { token })
     return data
   } catch (error) {
-    console.log(error);
-    throw error
+    console.warn("Backend logout failed (token might be expired), clearing local storage anyway.");
+  } finally {
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('userInfo')
   }
 }

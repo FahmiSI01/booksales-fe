@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { getBooks, deleteBook } from "../../../_services/books";
 import { getGenres } from "../../../_services/genres";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
 
 export default function AdminBooks() {
   const [books, setBooks] = useState([]);
@@ -34,11 +35,32 @@ export default function AdminBooks() {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this book?");
+    const result = await Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: "Data buku ini akan dihapus permanen!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, hapus!'
+    });
 
-    if (confirmDelete) {
-      await deleteBook(id);
-      setBooks(books.filter((book) => book.id !== id));
+    if (result.isConfirmed) {
+      try {
+        await deleteBook(id);
+        setBooks(books.filter((book) => book.id !== id));
+        Swal.fire(
+          'Terhapus!',
+          'Data buku berhasil dihapus.',
+          'success'
+        );
+      } catch (error) {
+        Swal.fire(
+          'Gagal!',
+          'Terjadi kesalahan saat menghapus data.',
+          'error'
+        );
+      }
     }
   };
 
@@ -106,7 +128,7 @@ export default function AdminBooks() {
                 <th className="px-4 py-3">Price</th>
                 <th className="px-4 py-3">Stock</th>
                 <th className="px-4 py-3">Cover</th>
-                <th className="px-4 py-3">Genre</th>
+                <th className="px-4 py-3">Kategori</th>
                 <th className="px-4 py-3">Author</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>

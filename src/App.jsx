@@ -20,6 +20,12 @@ import AdminTransactions from "./pages/admin/transactions";
 import TransactionEdit from "./pages/admin/transactions/edit";
 import { RequireAuth, RequireAdmin } from "./components/ProtectedRoute";
 import UserTransactions from "./pages/public/transactions";
+import Tentang from "./pages/public/tentang";
+import Kontak from "./pages/public/kontak";
+import Cart from "./pages/public/cart";
+import AdminMessages from "./pages/admin/messages";
+import Payment from "./pages/public/payment";
+import AdminUsers from "./pages/admin/users";
 
 function App() {
   return (
@@ -34,6 +40,27 @@ function App() {
               <Route index element={<Books />} />
               <Route path="show/:id" element={<ShowBook />} />
             </Route>
+
+            <Route path="tentang" element={<Tentang />} />
+            <Route path="kontak" element={<Kontak />} />
+            
+            <Route
+              path="cart"
+              element={
+                <RequireAuth>
+                  <Cart />
+                </RequireAuth>
+              }
+            />
+            
+            <Route
+              path="payment"
+              element={
+                <RequireAuth>
+                  <Payment />
+                </RequireAuth>
+              }
+            />
 
             <Route
               path="transactions"
@@ -66,6 +93,9 @@ function App() {
               <Route path="create" element={<BookCreate />} />
               <Route path="edit/:id" element={<BookEdit />} />
             </Route>
+            
+            {/* Users */}
+            <Route path="users" element={<AdminUsers />} />
 
             {/* Authors */}
             <Route path="authors">
@@ -86,6 +116,9 @@ function App() {
               <Route index element={<AdminTransactions />} />
               <Route path="edit/:id" element={<TransactionEdit />} />
             </Route>
+            
+            {/* Messages */}
+            <Route path="messages" element={<AdminMessages />} />
           </Route>
         </Routes>
       </BrowserRouter>

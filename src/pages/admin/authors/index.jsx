@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getAuthors } from "../../../_services/authors";
 import { Link } from "react-router-dom";
 import { deleteAuthor } from "../../../_services/authors";
+import Swal from "sweetalert2";
 
 export default function AdminAuthors() {
   const [authors, setAuthors] = useState([]);
@@ -21,10 +22,32 @@ export default function AdminAuthors() {
   }, []);
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this author?");
-    if (confirmDelete) {
-      await deleteAuthor(id);
-      setAuthors(authors.filter((author) => author.id !== id));
+    const result = await Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: "Data author ini akan dihapus permanen!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, hapus!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteAuthor(id);
+        setAuthors(authors.filter((author) => author.id !== id));
+        Swal.fire(
+          'Terhapus!',
+          'Data author berhasil dihapus.',
+          'success'
+        );
+      } catch (error) {
+        Swal.fire(
+          'Gagal!',
+          'Terjadi kesalahan saat menghapus data.',
+          'error'
+        );
+      }
     }
   };
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { getTransactions, deleteTransactions } from "../../../_services/transactions";
+import { getTransactions, deleteTransactions, deleteAllTransactions } from "../../../_services/transactions";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
 
 export default function AdminTransactions() {
   const [transactions, setTransactions] = useState([]);
@@ -24,16 +25,62 @@ export default function AdminTransactions() {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this transaction?"
-    );
+    const result = await Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: "Data transaksi ini akan dihapus permanen!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, hapus!'
+    });
 
-    if (confirmDelete) {
-      await deleteTransactions(id);
+    if (result.isConfirmed) {
+      try {
+        await deleteTransactions(id);
+        setTransactions(transactions.filter((transaction) => transaction.id !== id));
+        Swal.fire(
+          'Terhapus!',
+          'Data transaksi berhasil dihapus.',
+          'success'
+        );
+      } catch (error) {
+        Swal.fire(
+          'Gagal!',
+          'Terjadi kesalahan saat menghapus data.',
+          'error'
+        );
+      }
+    }
+  };
 
-      setTransactions(
-        transactions.filter((transaction) => transaction.id !== id)
-      );
+  const handleDeleteAll = async () => {
+    const result = await Swal.fire({
+      title: 'Hapus SEMUA Transaksi?',
+      text: "Seluruh riwayat transaksi akan dihapus permanen dan tidak bisa dikembalikan!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, bersihkan semua!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteAllTransactions();
+        setTransactions([]);
+        Swal.fire(
+          'Terhapus!',
+          'Semua data transaksi berhasil dibersihkan.',
+          'success'
+        );
+      } catch (error) {
+        Swal.fire(
+          'Gagal!',
+          'Terjadi kesalahan saat membersihkan data.',
+          'error'
+        );
+      }
     }
   };
 
@@ -74,6 +121,18 @@ export default function AdminTransactions() {
               </div>
             </form>
           </div>
+          <div className="w-full md:w-auto flex flex-col md:flex-row space-y-2 md:space-y-0 items-stretch md:items-center justify-end md:space-x-3 flex-shrink-0">
+            <button
+              onClick={handleDeleteAll}
+              type="button"
+              className="flex items-center justify-center text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-red-800"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Reset Semua Data
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -81,9 +140,11 @@ export default function AdminTransactions() {
             <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th className="px-4 py-3">Order Number</th>
-                <th className="px-4 py-3">Customer ID</th>
-                <th className="px-4 py-3">Book ID</th>
+                <th className="px-4 py-3">Customer</th>
+                <th className="px-4 py-3">Book</th>
                 <th className="px-4 py-3">Total Amount</th>
+                <th className="px-4 py-3">Payment</th>
+                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Created At</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -101,19 +162,29 @@ export default function AdminTransactions() {
                     </td>
 
                     <td className="px-4 py-3">
-                      {transaction.customer_id}
+                      {transaction.user ? transaction.user.name : `ID: ${transaction.customer_id}`}
                     </td>
 
                     <td className="px-4 py-3">
-                      {transaction.book_id}
+                      {transaction.book ? transaction.book.title : `ID: ${transaction.book_id}`}
                     </td>
 
                     <td className="px-4 py-3">
-                      Rp. {transaction.total_amount}
+                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(transaction.total_amount)}
+                    </td>
+
+                    <td className="px-4 py-3 uppercase text-xs font-semibold text-gray-500">
+                      {transaction.payment_method || '-'}
                     </td>
 
                     <td className="px-4 py-3">
-                      {transaction.created_at}
+                      <span className={`px-2 py-1 text-xs rounded-full font-semibold ${transaction.status === 'success' || transaction.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {transaction.status || 'Pending'}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      {new Date(transaction.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </td>
 
                     <td className="px-4 py-3 flex items-center justify-end relative">
@@ -164,7 +235,7 @@ export default function AdminTransactions() {
               ) : (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="8"
                     className="text-center py-4 text-gray-500 dark:text-gray-400"
                   >
                     Data tidak ditemukan
